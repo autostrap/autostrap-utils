@@ -8,19 +8,41 @@ sufficient to run them. If they do have run-time dependencies beyond what can
 reasonably expected to be present on a modern unixoid system those are listed
 below.
 
+Setup
+=====
+
+Add this repository's bin/ subdirectory to your shell's search path, e.g. if
+you checked it out to ~/cloudstrap-scripts, do a
+
+  `$ PATH=$PATH:~/cloudstrap-scripts/bin`
+
+To make the scripts available permanently, add this command to your shell's
+initialization file (e.g. ~/.bashrc if you use bash).
+
 Scripts
 =======
+
+hiera_tree
+----------
+
+### SYNOPSIS
+
+  `hiera_tree <dir>`
+
+This script generates a hiera.yaml file with a hierarchy containing all yaml
+files found in *<dir>*. It is used by `merge_classes`.
 
 merge_classes
 -------------
 
 ### SYNOPSIS
 
-`merge_classes --data-dir <dir> <topic> [<topic> ...]`
+  `merge_classes --data-dir <dir> <topic> [<topic> ...]`
 
 This script builds a Hiera classes array from a list of configuration topics in
 sys11-config. It uses Hiera's array merge to resolve duplicate entries. It can
 generate such an array from any hieradata directory following the same naming
 convention as sys11-config (hieradata contains a classes.d directory with topic
 subdirectories). It's primary purpose is composing node or node type
-configurations for use in a project configuration repository.
+configurations for use in a project configuration repository. It uses
+`hiera_tree`, so ensure you've got the bin/ subdirectory in your PATH.
