@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# 2015, j.grassler@syseleven.de
+
+# merge_classes - Merges classes arrays from a list of topics Hiera style (no duplicates) and
+# outputs the result in a format suitable for consumption by Hiera.
+
+usage()
+  {
+  echo "$0 - Merges classes arrays from a list of topics Hiera style (no duplicates) and"
+  echo 'outputs the result in a format suitable for consumption by Hiera.'
+  echo
+  echo 'usage:'
+  echo "  $0 --data-dir <dir> <topic> [<topic> ...]"
+  echo
+  echo '  options:'
+  echo '    --data-dir <dir> Read classes arrays from topic directories in <dir>/classes.d.'
+  }
+
+gen_all=false
+
+while [[ $1 ]]; do
+  case $1 in
+    --data-dir)
+      data_dir=$(readlink -e $2)
+      shift 2
+      ;;
+    -h)
+      usage
+      exit 0
+      ;;
+    --*) # Unrecognized option
+      echo "warning: unrecognized option: $1" 1>&2
+      shift
+      ;;
+    *)
+      args+=("$1")
+      shift 1
+      ;;
+   esac
+done
+
+if [ -z "$data_dir" ]; then
+  echo 'No data dir given, aborting.' 1>&2
+  exit 1
+fi
+
+hiera_conf=$(mktemp --tmpdir=/tmp hiera_XXXXXXXXXX.yaml)
+
+cat > $hiera_conf <<EOF
+---
+:backends:
+  - yaml
+:logger: puppet
+:yaml:
+  :datadir: $data_dir
+  :puppet:
+    :datasource: data
+
+:hierarchy:
+EOF
+
+# Generates hierarchy entries for all yaml files in a directory tree
+gen_entries()
+  {
+  dir=$1
+  topicdir=$2
+
+  find "${dir}/${topicdir}" -type f \
+    | grep '\.yaml$' \
+    | sed -e 's/\.yaml$//' \
+    | sed "s#.*\(${topicdir}.*\)#\1#" \
+    | sed 's/^/  - "/' \
+    | sed 's/$/"/'
+  }
+
+for topic in ${args[*]}
+  do
+    gen_entries "${data_dir}" "classes.d" | grep $topic
+  done >> $hiera_conf
+
+echo '---'
+echo
+echo classes:
+hiera -c $hiera_conf -a classes 2> /dev/null | jq . - | grep -v -e '^\[$' -e '^\]$' | sed -e 's/^  /  - /' -e 's/,$//'
+
+rm $hiera_conf
