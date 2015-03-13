@@ -10,18 +10,18 @@ usage()
   echo 'outputs the result in a format suitable for consumption by Hiera.'
   echo
   echo 'usage:'
-  echo "  $0 --data-dir <dir> <topic> [<topic> ...]"
+  echo "  $0 --classes-dir <dir> <topic> [<topic> ...]"
   echo
   echo '  options:'
-  echo '    --data-dir <dir> Read classes arrays from topic directories in <dir>/classes.d.'
+  echo '    --classes-dir <dir> Read classes arrays from topic directories a in sys11-config style classes.d directory <dir>.'
   }
 
 gen_all=false
 
 while [[ $1 ]]; do
   case $1 in
-    --data-dir)
-      data_dir=$(readlink -e $2)
+    --classes-dir)
+      classes_dir=$(readlink -e $2)
       shift 2
       ;;
     -h)
@@ -39,44 +39,15 @@ while [[ $1 ]]; do
    esac
 done
 
-if [ -z "$data_dir" ]; then
-  echo 'No data dir given, aborting.' 1>&2
+if [ -z "$classes_dir" ]; then
+  echo 'No classes dir given, aborting.' 1>&2
+  usage
   exit 1
 fi
 
 hiera_conf=$(mktemp --tmpdir=/tmp hiera_XXXXXXXXXX.yaml)
 
-cat > $hiera_conf <<EOF
----
-:backends:
-  - yaml
-:logger: puppet
-:yaml:
-  :datadir: $data_dir
-  :puppet:
-    :datasource: data
-
-:hierarchy:
-EOF
-
-# Generates hierarchy entries for all yaml files in a directory tree
-gen_entries()
-  {
-  dir=$1
-  topicdir=$2
-
-  find "${dir}/${topicdir}" -type f \
-    | grep '\.yaml$' \
-    | sed -e 's/\.yaml$//' \
-    | sed "s#.*\(${topicdir}.*\)#\1#" \
-    | sed 's/^/  - "/' \
-    | sed 's/$/"/'
-  }
-
-for topic in ${args[*]}
-  do
-    gen_entries "${data_dir}" "classes.d" | grep $topic
-  done >> $hiera_conf
+hiera_tree $classes_dir > $hiera_conf
 
 echo '---'
 echo

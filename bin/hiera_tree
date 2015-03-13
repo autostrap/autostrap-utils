@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# 2015, j.grassler@syseleven.de
+
+# hiera_tree - Recursively builds a hiera.yaml configuration file containing all YAML files in a directory tree.
+
+usage()
+  {
+  echo "$0 - Recursively builds a hiera.yaml configuration file containing all YAML files in a directory tree."
+  echo
+  echo 'usage:'
+  echo "  $0 <dir>"
+  }
+
+
+dir=$1
+
+if [ -z "$dir" ]; then
+  echo 'No input directory given, aborting.' 1>&2
+  usage
+  exit 1
+fi
+
+dir=$(readlink -e $dir)
+
+cat <<EOF
+---
+:backends:
+  - yaml
+:logger: puppet
+:yaml:
+  :datadir: $dir
+  :puppet:
+    :datasource: data
+
+:hierarchy:
+EOF
+
+# Generates hierarchy entries for all yaml files in a directory tree
+
+find "$dir" -type f \
+  | grep '\.yaml$' \
+  | sed -e 's/\.yaml$//' \
+  | sed "s#.*${dir}/*\(.*\)#\1#" \
+  | sed 's/^/  - "/' \
+  | sed 's/$/"/'
