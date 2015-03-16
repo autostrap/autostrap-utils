@@ -1,0 +1,144 @@
+#!/usr/bin/env ruby
+# 2015, j.grassler@syseleven.de
+# 
+# check_hiera_hash - recursively checks all occurences of a YAML hash across all yaml files in a directory tree for inconsistencies.
+ 
+require 'yaml'
+require 'getoptlong'
+
+options = GetoptLong.new(
+    [ '-h', '--help', GetoptLong::NO_ARGUMENT ],
+    [ '-a', '--show-all', GetoptLong::NO_ARGUMENT ],
+    [ '-k', '--key', GetoptLong::REQUIRED_ARGUMENT ],
+  )
+
+def usage()
+puts <<EOF
+#{$0} - recursively checks all occurences of a YAML hash across all yaml files in a directory tree for inconsistencies.
+usage:
+
+  ${0} --k <key> [-a] <file> [ <file> ... ]
+
+Options:
+
+  -h, --help:
+
+    show help
+
+  -k, --key <key>
+    
+    Search files for YAML hash with name <key>.
+
+
+  -a, --show-all
+
+    Show all occurences of the given hash with full contents and their filename
+    (normally only multiply occuring keys with differing values and the files
+    they occur in are shown).
+EOF
+end
+
+searchkey = nil   # Name of the YAML hash to search for.
+showall = false   # Show all entries of the YAML hash and their file names, even if there is only one.
+
+options.each { |opt,arg|
+  case opt
+    when '-h'
+      usage()
+      exit 0
+    when '-a'
+      showall = true
+    when '-k'
+      searchkey = arg
+  end
+  }
+
+
+if ( searchkey.nil? )
+  warn "No search key provided, exiting."
+  usage()
+  exit 1
+end
+
+# Recursively parses all YAML files a directory tree and records all instances
+# of a given YAML variable along with the file it occurs in.
+# 
+# Parameters:
+#
+#   file        A directory to search for YAML files in or a YAML file.
+#   search_key  The YAML variable to look for.
+
+def traverse_dir(file, search_key)
+  ret = Array.new
+  if ( File.directory?(file) )
+    d = Dir.new(file)
+    d.each { |entry|
+      if ( entry.match(/^\./) )
+        next
+      end
+      ret = ret + traverse_dir([file, entry].join('/'), search_key)
+      }
+  end
+
+  if ( File.file?(file) and file.match(/\.yaml$/) )
+    yaml = YAML.load_file(file)
+    yaml.keys.each { |key|
+      unless ( key == search_key )
+        next
+      end
+
+      ret.push ( {
+            :filename => file,
+            :content  => yaml[key],
+            } )
+      }
+  end
+
+  return ret
+end
+
+instances = Array.new
+
+ARGV.each { |arg|
+  instances = instances + traverse_dir(arg, 'repodeploy::repos')
+  }
+
+repos = Hash.new
+
+instances.each { |instance|
+  instance[:content].each_pair { |key, value|
+    unless ( repos[key] ) # No entry for this repo, yet.
+      repos[key] = Array.new
+      repos[key].push(
+          {
+          :filename => instance[:filename],
+          :entry    => value,
+          }
+        )
+    end
+
+    # Repo entry differs from first recorded entry for this repo name.
+    if ( value != repos[key][0][:entry] )
+      repos[key].push(
+        {
+          :filename => instance[:filename],
+          :entry    => value,
+        }
+      )
+    end
+  }
+}
+
+repos.each_pair { |name, repo|
+  if ( (repo.length == 1) and (showall == false) )
+    next
+  end
+
+  puts "#{name}:"
+  repo.each { |instance|
+    puts "  #{instance[:filename]}"
+    instance[:entry].to_yaml[4..-1].lines.each { |line|
+      puts "    #{line}"
+      }
+    }
+  }
