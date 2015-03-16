@@ -1,0 +1,127 @@
+#!/usr/bin/env ruby
+# 2015, j.grassler@syseleven.de
+# 
+# check_hiera_hash - recursively checks all occurences of a YAML hash across all yaml files in a directory tree for inconsistencies.
+ 
+require 'yaml'
+require 'optparse'
+
+options = Hash.new
+options[:showall] = false
+
+op = OptionParser.new do |opts|
+  opts.banner =   "Usage: hiera_dump [options]\n"
+                  "#{$0} - recursively checks all occurences of a YAML hash across all " +
+                  "yaml files in a directory tree for inconsistencies.\n" +
+                  "usage: #{0} -k <key> [-a] <file> [ <file> ... ]"
+
+  opts.on('-a', '--show-all', 
+       'Show all occurences of the given hash with full contents and ' +
+       'their file name (normally only multiply occuring keys with ' +
+       'differing values and the files they occur in are shown).') { |v| options[:showall] = true }
+
+  opts.on('-k', '--key KEY',
+    'Search files for YAML hash with name KEY.') { |key| options[:key] = key }
+
+end.parse!
+    
+
+unless ( options[:key] )
+  warn "No search key provided, exiting."
+  puts op.help
+  exit 1
+end
+
+# Recursively parses all YAML files a directory tree and records all instances
+# of a given YAML variable along with the file it occurs in.
+# 
+# Parameters:
+#
+#   file        A directory to search for YAML files in or a YAML file.
+#   search_key  The YAML variable to look for.
+# 
+# Return value: 
+#   Array of hashes, one hash per file, with the hashes structured as follows:
+#
+#     :content  The contents of an instance of the YAML hash named by search_key.
+#     :filename The name of the file this instance of the YAML hash was found in.
+
+def traverse_dir(file, search_key)
+  ret = Array.new
+  if ( File.directory?(file) )
+    d = Dir.new(file)
+    d.each { |entry|
+      if ( entry.match(/^\./) )
+        next
+      end
+      ret = ret + traverse_dir([file, entry].join('/'), search_key)
+      }
+  end
+
+  if ( File.file?(file) and file.match(/\.yaml$/) )
+    yaml = YAML.load_file(file)
+    yaml.keys.each { |key|
+      unless ( key == search_key )
+        next
+      end
+
+      ret.push ( {
+            :filename => file,
+            :content  => yaml[key],
+            } )
+      }
+  end
+
+  return ret
+end
+
+instances = Array.new
+
+ARGV.each { |arg|
+  instances = instances + traverse_dir(arg, options[:key])
+  }
+
+# Keyed by the original hash's keys. Contains an array of
+# hashes that are structured as follows:
+#   :filename  The file this value was found in.
+#   :entry     The value found in the file in question.
+
+entries = Hash.new
+
+instances.each { |instance|
+  instance[:content].each_pair { |key, value|
+    unless ( entries[key] ) # No entry for this key, yet.
+      entries[key] = Array.new
+      entries[key].push(
+          {
+          :filename => instance[:filename],
+          :entry    => value,
+          }
+        )
+    end
+
+    # Value differs from first recorded value for this key name.
+    if ( value != entries[key][0][:entry] )
+      entries[key].push(
+        {
+          :filename => instance[:filename],
+          :entry    => value,
+        }
+      )
+    end
+  }
+}
+
+entries.each_pair { |name, contents|
+  if ( (contents.length == 1) and (options[:showall] == false) )
+    next
+  end
+
+  puts "#{name}:"
+  contents.each { |instance|
+    puts "  #{instance[:filename]}"
+    instance[:entry].to_yaml[4..-1].lines.each { |line|
+      puts "    #{line}"
+      }
+    }
+  }
