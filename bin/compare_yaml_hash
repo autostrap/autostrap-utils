@@ -10,10 +10,9 @@ options = Hash.new
 options[:showall] = false
 
 op = OptionParser.new do |opts|
-  opts.banner =   "Usage: hiera_dump [options]\n"
+  opts.banner =   "Usage: #{$0} -k <key> [-a] <file> [ <file> ... ]\n\n" +
                   "#{$0} - recursively checks all occurences of a YAML hash across all " +
-                  "yaml files in a directory tree for inconsistencies.\n" +
-                  "usage: #{0} -k <key> [-a] <file> [ <file> ... ]"
+                  "yaml files in a directory tree for inconsistencies.\n"
 
   opts.on('-a', '--show-all', 
        'Show all occurences of the given hash with full contents and ' +

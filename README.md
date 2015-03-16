@@ -22,6 +22,18 @@ initialization file (e.g. ~/.bashrc if you use bash).
 Scripts
 =======
 
+compare_yaml_hash
+-----------------
+
+### SYNOSIS
+
+  `compare_yaml_hash -k <key> [-a] <file> [ <file> ... ]`
+
+This script recursively compares all occurences of the YAML hash *key* in a
+directory tree and outputs all keys whose values differ across multiple
+occurences of this YAML hash, along with the names of the files where these
+deviations occured.
+
 hiera_tree
 ----------
 
