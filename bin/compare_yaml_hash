@@ -9,7 +9,7 @@ require 'optparse'
 options = Hash.new
 options[:showall] = false
 
-op = OptionParser.new do |opts|
+OptionParser.new do |opts|
   opts.banner =   "Usage: #{$0} -k <key> [-a] <file> [ <file> ... ]\n\n" +
                   "#{$0} - recursively checks all occurences of a YAML hash across all " +
                   "yaml files in a directory tree for inconsistencies.\n"
@@ -27,7 +27,6 @@ end.parse!
 
 unless ( options[:key] )
   warn "No search key provided, exiting."
-  puts op.help
   exit 1
 end
 
@@ -87,6 +86,8 @@ ARGV.each { |arg|
 
 entries = Hash.new
 
+retval = 0  # Exit status.
+
 instances.each { |instance|
   instance[:content].each_pair { |key, value|
     unless ( entries[key] ) # No entry for this key, yet.
@@ -101,6 +102,8 @@ instances.each { |instance|
 
     # Value differs from first recorded value for this key name.
     if ( value != entries[key][0][:entry] )
+      retval = 1
+
       entries[key].push(
         {
           :filename => instance[:filename],
@@ -124,3 +127,5 @@ entries.each_pair { |name, contents|
       }
     }
   }
+
+exit retval
