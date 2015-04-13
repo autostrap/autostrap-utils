@@ -60,6 +60,5 @@ else
     do
       grep_args="$grep_args -e $topic"
     done
-    gen_entries $indir  | grep -w ${grep_args}
-    echo DEBUG: gen_entries $indir  \| grep -w ${grep_args}
+  gen_entries $indir  | grep -w ${grep_args}
 fi
