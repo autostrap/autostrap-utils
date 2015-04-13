@@ -8,11 +8,14 @@ usage()
   echo "$0 - Recursively builds a hiera.yaml configuration file containing all YAML files in a directory tree."
   echo
   echo 'usage:'
-  echo "  $0 <dir>"
+  echo "  $0 <dir> [<topic> ...]"
   }
 
 
 dir=$1
+shift
+
+topics=$*
 
 if [ -z "$dir" ]; then
   echo 'No input directory given, aborting.' 1>&2
@@ -20,7 +23,7 @@ if [ -z "$dir" ]; then
   exit 1
 fi
 
-dir=$(readlink -e $dir)
+indir=$(readlink -e $dir)
 
 cat <<EOF
 ---
@@ -28,7 +31,7 @@ cat <<EOF
   - yaml
 :logger: puppet
 :yaml:
-  :datadir: $dir
+  :datadir: $indir
   :puppet:
     :datasource: data
 
@@ -37,9 +40,25 @@ EOF
 
 # Generates hierarchy entries for all yaml files in a directory tree
 
-find "$dir" -type f \
-  | grep '\.yaml$' \
-  | sed -e 's/\.yaml$//' \
-  | sed "s#.*${dir}/*\(.*\)#\1#" \
-  | sed 's/^/  - "/' \
-  | sed 's/$/"/'
+gen_entries()
+  {
+  dir=$1
+
+  find "$dir" -type f \
+    | grep '\.yaml$' \
+    | sed -e 's/\.yaml$//' \
+    | sed "s#.*${dir}/*\(.*\)#\1#" \
+    | sed 's/^/  - "/' \
+    | sed 's/$/"/'
+  }
+
+if [ -z "$topics" ]; then
+  gen_entries $indir
+else
+  grep_args=''
+  for topic in $topics
+    do
+      grep_args="$grep_args -e $topic"
+    done
+  gen_entries $indir  | grep -w ${grep_args}
+fi

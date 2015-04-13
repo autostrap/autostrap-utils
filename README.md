@@ -40,10 +40,12 @@ hiera_tree
 
 ### SYNOPSIS
 
-  `hiera_tree <dir>`
+  `hiera_tree <dir> [<topic> ...]`
 
 This script generates a hiera.yaml file with a hierarchy containing all yaml
-files found in *<dir>*. It is used by `merge_classes`.
+files found in *<dir>*. It is used by `merge_classes`. By default it includes
+all topic directories under *<dir>*, but those can be filtered to include only
+these specified as optional command-line arguments.
 
 merge_classes
 -------------

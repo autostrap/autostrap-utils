@@ -13,7 +13,7 @@ usage()
   echo "  $0 --classes-dir <dir> <topic> [<topic> ...]"
   echo
   echo '  options:'
-  echo '    --classes-dir <dir> Read classes arrays from topic directories a in sys11-config style classes.d directory <dir>.'
+  echo '    --classes-dir <dir> Read classes arrays from topic directories in a sys11-config style classes.d directory <dir>.'
   }
 
 gen_all=false
@@ -47,7 +47,7 @@ fi
 
 hiera_conf=$(mktemp --tmpdir=/tmp hiera_XXXXXXXXXX.yaml)
 
-hiera_tree $classes_dir > $hiera_conf
+hiera_tree $classes_dir ${args[*]} > $hiera_conf
 
 echo '---'
 echo
