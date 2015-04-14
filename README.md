@@ -35,6 +35,17 @@ occurences of this YAML hash, along with the names of the files where these
 deviations occured. It will return 1 if any differing keys occur and 0
 otherwise.
 
+heat_doclint
+------------
+
+### SYNOPSIS
+
+  `heat_doclint file <file ...>`
+
+This script checks the heat templates passed as command line parameters for
+missing `description` fields. Currently only heat templates in YAML format are
+supported.
+
 heat2adoc
 ---------
 
