@@ -35,6 +35,20 @@ occurences of this YAML hash, along with the names of the files where these
 deviations occured. It will return 1 if any differing keys occur and 0
 otherwise.
 
+heat2adoc
+---------
+
+### SYNOPSIS
+
+  `heat2adoc [-o <outfile>] [-p [name space prefix>] <file>`
+
+This script generates asciidoc documentation from a heat template's
+`description` fields. By default it prints the generated documentation to
+stdout. It can optionally prefix a name space component to the heat template's
+resource name. This name space component is supplied as argument of the `-p`
+option. Currently only heat templates in YAML format are supported.
+
+
 hiera_tree
 ----------
 
