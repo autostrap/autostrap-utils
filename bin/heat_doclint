@@ -36,7 +36,7 @@ ARGV.each { |file|
     if ( yaml.has_key?(section) and ( ! yaml[section].empty? ) )
       yaml[section].each_pair { |item, item_content|
         unless ( item_content['description'] )
-          puts "#{file}: #{section}: #{item}: description missing"
+          puts "#{file}: #{section}/#{item} description missing"
         end
         }
     end
