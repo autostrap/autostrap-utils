@@ -1,0 +1,102 @@
+#!/usr/bin/env ruby
+# 2015, j.grassler@syseleven.de
+# 
+# heat2adoc - Generates asciidoc from a heat template's description fields.
+ 
+require 'yaml'
+require 'optparse'
+
+options = Hash.new
+options[:outfile] = nil
+options[:prefix] = nil
+
+usage = "Usage: #{$0} [-o <outfile>] [-p [name space prefix>] <file>\n"
+
+OptionParser.new do |opts|
+  opts.banner =   usage + "\n" +
+                  "heat2adoc - Generates asciidoc from a heat template's description fields."
+
+  opts.on('-o', '--output FILE', 
+       'Write asciidoc output to FILE instead of standard output.') { |outfile| options[:outfile] = outfile }
+  opts.on('-p', '--prefix PREFIX' ,
+       'Name space to prefix resource names with.') { |outfile| options[:prefix] = 'prefix' }
+end.parse!
+
+if ( ARGV.empty? )
+  warn "No input file provided, exiting."
+  puts usage
+  exit 1
+end
+
+if ( ARGV.length > 1 )
+  warn "No input file provided, exiting."
+  puts usage
+  exit 1
+end
+
+file = ARGV.shift
+
+resource_name = file.gsub('/', '::').gsub(/\.yaml$/,'')
+
+if ( options[:prefix] )
+  resource_name = options[:prefix] + '::' + resource_name
+end
+
+yaml = YAML.load_file(file)
+out = STDOUT
+
+if ( options[:outfile] )
+  begin
+    out = File.new(options[:outfile],'w')
+  rescue => e
+    warn "Couldn't open #{options[:outfile]} for writing: #{e.to_s}"
+    exit 1
+  end
+end
+
+out.puts "== #{resource_name}"
+out.puts
+
+if ( options[:outfile] )
+end
+
+# Print template's top-level description.
+
+if ( yaml.has_key?('description') )
+  out.puts '=== Description'
+  out.puts
+  out.puts yaml['description']
+  out.puts
+end
+
+# Print documentation for template's parameters/properties.
+
+if ( yaml.has_key?('parameters') and ( ! yaml['parameters'].empty? ) )
+  out.puts '=== Properties'
+  out.puts
+  yaml['parameters'].each_pair { |item, item_content|
+    out.puts "==== #{item}"
+    out.puts
+    out.puts "Type:: #{item_content['type']}"
+    out.puts
+    if ( item_content['description'] )
+      out.puts "Description:: #{item_content['description']}"
+    end
+    out.puts
+    }
+end
+
+# Print documentation for template's outputs/attributes.
+
+if ( yaml.has_key?('outputs') and ( ! yaml['outputs'].empty? )  )
+  out.puts '=== Outputs'
+  out.puts
+  yaml['outputs'].each { |item, item_content|
+    out.puts "==== #{item}"
+    out.puts
+    if ( item_content['description'] )
+      out.puts "Description:: #{item_content['description']}"
+    end
+    out.puts
+    }
+end
