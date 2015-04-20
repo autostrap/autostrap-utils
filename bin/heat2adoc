@@ -19,7 +19,7 @@ OptionParser.new do |opts|
   opts.on('-o', '--output FILE', 
        'Write asciidoc output to FILE instead of standard output.') { |outfile| options[:outfile] = outfile }
   opts.on('-p', '--prefix PREFIX' ,
-       'Name space to prefix resource names with.') { |outfile| options[:prefix] = 'prefix' }
+       'Name space to prefix resource names with.') { |prefix| options[:prefix] = prefix }
 end.parse!
 
 if ( ARGV.empty? )
