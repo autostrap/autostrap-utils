@@ -12,9 +12,9 @@ Setup
 =====
 
 Add this repository's bin/ subdirectory to your shell's search path, e.g. if
-you checked it out to ~/cloudstrap-scripts, do a
+you checked it out to ~/autostrap-utils, do a
 
-  `$ PATH=$PATH:~/cloudstrap-scripts/bin`
+  `$ PATH=$PATH:~/autostrap-utils/bin`
 
 To make the scripts available permanently, add this command to your shell's
 initialization file (e.g. ~/.bashrc if you use bash).
